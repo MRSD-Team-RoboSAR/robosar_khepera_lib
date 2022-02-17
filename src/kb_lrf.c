@@ -870,7 +870,7 @@ int kb_lrf_GetDistances(int LRF_DeviceHandle)
 		return -1;
 	}	
 
-	if(urg_captureByMD(&urg_state, 1)<0)
+	if(urg_captureByGD(&urg_state)<0)
 	{
 		return -2;
 	}
