@@ -84,6 +84,9 @@ long kb_lrf_DistanceDataSensor[LRF_DATA_NB];	// Current Data from LRF
 long kb_lrf_DistanceDataSum[LRF_DATA_NB];		// Summed Data from LRF
 int kb_lrf_DistanceGoodCounter[LRF_DATA_NB];		// Counter for good readings
 
+// RoboSAR: Moved to global from urg_addRecvData for resetting
+int urg_addRecvData_remain_byte = 0;
+
 
 /*****************************************************************************/
 /* Internal functions ********************************************************/
@@ -510,21 +513,19 @@ static long urg_decode(const char* data, int data_byte) {
  * \return 0 no error
 */
 static int urg_addRecvData(const char buffer[], long data[], int* filled) {
-
-  static int remain_byte = 0;
   static char remain_data[3];
   const int data_byte = 3;
 
   const char* pre_p = buffer;
   const char* p = pre_p;
 
-  if (remain_byte > 0) {
-    memmove(&remain_data[remain_byte], buffer, data_byte - remain_byte);
+  if (urg_addRecvData_remain_byte > 0) {
+    memmove(&remain_data[urg_addRecvData_remain_byte], buffer, data_byte - urg_addRecvData_remain_byte);
     data[*filled] = urg_decode(remain_data, data_byte);
     ++(*filled);
-    pre_p = &buffer[data_byte - remain_byte];
+    pre_p = &buffer[data_byte - urg_addRecvData_remain_byte];
     p = pre_p;
-    remain_byte = 0;
+    urg_addRecvData_remain_byte = 0;
   }
 
   do {
@@ -535,8 +536,8 @@ static int urg_addRecvData(const char buffer[], long data[], int* filled) {
       pre_p = p;
     }
   } while (*p != '\0');
-  remain_byte = p - pre_p;
-  memmove(remain_data, pre_p, remain_byte);
+  urg_addRecvData_remain_byte = p - pre_p;
+  memmove(remain_data, pre_p, urg_addRecvData_remain_byte);
 
   return 0;
 }
@@ -805,6 +806,8 @@ void kb_lrf_Power_Off(void)
  */
 int kb_lrf_Init(char *LRF_DeviceName)
 {
+  // RoboSAR: reset global variable at init
+  urg_addRecvData_remain_byte = 0;
   int LRF_DeviceHandle=-1;
   int recv_n = 0; 
   int ret=0;
